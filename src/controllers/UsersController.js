@@ -3,23 +3,24 @@ const AppError = require("../utils/AppError");
 const sqliteConnection = require('../database/sqlite');
 const { application } = require("express");
 
+const UserRepository = require("../repositories/UserRepository")
 class UserController {
     async create(request, response) {
         const { name, email, password } = request.body
 
-         const database = await sqliteConnection();
-         const checkUserExists = await database.get("SELECT * FROM users WHERE email = (?)", [email]);
+        const userRepository = new UserRepository();
 
-         if(checkUserExists) {
+        const checkUserExists = await userRepository.findByEmail(email);
+
+        if(checkUserExists) {
             throw new AppError("Este e-mail já está em uso.")
-         }
+        }
 
-         const hashedPassword = await hash(password, 8);
+        const hashedPassword = await hash(password, 8);
 
-         await database.run("INSERT INTO users (name, email, password) VALUES (?,?,?)",
-         [name, email, hashedPassword]);
+        await userRepository.create({ name, email, password: hashedPassword})
 
-         return response.status(201).json();
+        return response.status(201).json();
     }
 
     async update(request, response) {
